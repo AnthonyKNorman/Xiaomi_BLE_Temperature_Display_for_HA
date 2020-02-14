@@ -20,12 +20,12 @@ The display outpus Temperature, Humidity and Battery level using Bluetooth Low E
   hostname = "192.168.0.99"   # address of MQTT server
   ```
   where you must enter the name, or IP address of your MQTT server.
-* ble_scan_example.py is from https://gist.github.com/bgloh/3c7dd0c754a0b596e8ef6225199adc1e. I have reproduced here, unchanged. You will need to runthis to discover the address of your device
-run
+* ble_scan_example.py is from https://gist.github.com/bgloh/3c7dd0c754a0b596e8ef6225199adc1e. I have reproduced here, unchanged. You will need to run this to discover the address of your device
+  run
 ```
 sudo python3 ble_scan_example.py
 ```
-and you should see something like
+  and you should see something like
 ```
 pi@blemqtt:~ $ sudo python3 ble_scan_example.py
 Discovered device 03:9b:b5:ed:03:d0
@@ -52,5 +52,12 @@ Device a4:c1:38:cf:bc:2f (public), RSSI=-43 dB
 
 ```
 This shows the address of the LYWSD03MMC as a4:c1:38:cf:bc:2f
+* now edit blemqtt.sh and change the address to match the one you have just discovered
+```
+#!/bin/bash
+/home/pi/LYWSD03MMC.py -d a4:c1:38:cf:bc:2f -r -b 5
+```  
+  you will probably need to use chmod to make the script execustable```
+``` sudo chmod 777 blemqtt.sh
+```
 
- 
