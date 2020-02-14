@@ -17,6 +17,7 @@ import math
 import logging
 import paho.mqtt.publish as publish     # pip3 install paho-mqtt
 
+# set the hostname to your MQTT server
 topic = "blemqtt/sensor01"  # MQTT Topic
 hostname = "192.168.0.99"   # address of MQTT server
 
