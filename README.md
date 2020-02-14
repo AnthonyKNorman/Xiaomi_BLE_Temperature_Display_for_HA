@@ -79,5 +79,7 @@ Humidity: 46
   <img width="800" src="resources/ha_mqtt.png">
 </p>
  
-You should see an out put like the one above.
-
+You should see an output like the one above.
+* next step is make it run automatically. For this we use a Systemd service
+  copy blemqtt.service to /etc/systemd/system. If you used my setup guide, you can do this straight from you windows desktop.
+  
