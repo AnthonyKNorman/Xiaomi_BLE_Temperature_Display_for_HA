@@ -58,6 +58,24 @@ This shows the address of the LYWSD03MMC as a4:c1:38:cf:bc:2f
 /home/pi/LYWSD03MMC.py -d a4:c1:38:cf:bc:2f -r -b 5
 ```  
   you will probably need to use chmod to make the script execustable```
-``` sudo chmod 777 blemqtt.sh
+``` 
+sudo chmod 777 blemqtt.sh
 ```
+8 now try
+```
+./blemqtt.sh
+```
+  if all is well you should see an output like this
+```
+Trying to connect to a4:c1:38:cf:bc:2f
+Battery-Level: 99
+Temperature: 22.1
+Humidity: 46
+```
+* to test the MQTT output we can use Home Assistant
+ Just open up Developer Tools and go to the MQTT tab
+ enter blemqtt/# next to **Listening to** under the **Listen to a topic** tab
+ 
+ 
+
 
