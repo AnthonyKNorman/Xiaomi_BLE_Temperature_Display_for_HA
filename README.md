@@ -1,4 +1,4 @@
-# Xiaomi BLE Tempertaure Display for Home Assistant
+# Xiaomi BLE Temperature Display for Home Assistant
 ## Introduction
 I have developed this project to integrate the Xiaomi LYWSD03MMC LCD temperature and Humidity display with Home Assistant. 
 
@@ -129,6 +129,9 @@ title: Xiaomi Display
 type: glance
 ```
 If all is well you should see something like this:
+<p align="center">
+  <img width="460" src="resources/xiaomi_display.png">
+</p>
 
   
 
