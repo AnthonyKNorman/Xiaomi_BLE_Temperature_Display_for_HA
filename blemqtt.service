@@ -1,0 +1,15 @@
+[Unit]
+Description=BLE MQTT LYWSD03MMC
+After=network.target
+
+[Service]
+ExecStart=/home/pi/blemqtt.sh
+WorkingDirectory=/home/pi
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target
+
