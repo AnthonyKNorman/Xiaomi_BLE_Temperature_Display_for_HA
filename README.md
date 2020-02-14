@@ -130,7 +130,7 @@ type: glance
 ```
 If all is well you should see something like this:
 <p align="center">
-  <img width="460" src="resources/xiaomi_display.png">
+  <img src="resources/xiaomi_display.png">
 </p>
 
   
