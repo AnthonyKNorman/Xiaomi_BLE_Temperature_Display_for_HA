@@ -87,5 +87,50 @@ You should see an output like the one above.
 sudo systemctl enable blemqtt
 sudo systemctl start blemqtt
 ```
+  If you repeat the step where you listen for the topic in Home Assistant, you should see the values coming through.
+* Now we are going to create the sensors in Home assistant. You will need to edit your onfiguration.yaml. I use the Configurator Add-on.
+Add in these entries:
+```
+sensor:
+  - platform: mqtt
+    name: "Temperature"
+    state_topic: "blemqtt/sensor01"
+    unit_of_measurement: '°C'
+    device_class: "temperature"
+    value_template: "{{ value_json.temperature }}"
+    
+  - platform: mqtt
+    name: "Humidity"
+    state_topic: "blemqtt/sensor01"
+    device_class: "humidity"
+    unit_of_measurement: '%'
+    value_template: "{{ value_json.humidity }}"
+     
+  - platform: mqtt
+    name: "Battery"
+    state_topic: "blemqtt/sensor01"
+    device_class: "battery"
+    unit_of_measurement: '%'
+    value_template: "{{ value_json.batt }}"
+```
+  If you already have a sensor: tag then add these underneath it. If you duplicate it, you will get an error.
+  In order to make these changes live you will have to restar Home Assistant. The easiest way is to do this is to go into **Developer Tools** and select the **SERVICES** tab. Select the **homeassistant.restart** Service and click on **CALL SERVICE**.
+  You will get the **Connection lost. Reconnecting...** message for a while.
+  
+  * once this is finished we can have a look at our values.
+  In the **Overview** go into edit mode by clicking on the three little vertical dots in the top right of the page. Then select **Configure UI**.
+  In the bottonm right, click on the **+** button to make a new card. Select **Glance**. In the card, click on **SHOW CODE EDITOR**, and copy in the following code
+ ```
+ entities:
+  - entity: sensor.temperature
+  - entity: sensor.humidity
+  - entity: sensor.battery
+title: Xiaomi Display
+type: glance
+```
+If all is well you should see something like this:
+
+  
+
 
 
