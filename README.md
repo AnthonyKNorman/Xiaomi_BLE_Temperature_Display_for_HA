@@ -82,4 +82,10 @@ Humidity: 46
 You should see an output like the one above.
 * next step is make it run automatically. For this we use a Systemd service
   copy blemqtt.service to /etc/systemd/system. If you used my setup guide, you can do this straight from you windows desktop.
-  
+* Run
+```
+sudo systemctl enable blemqtt
+sudo systemctl start blemqtt
+```
+
+
