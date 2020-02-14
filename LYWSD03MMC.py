@@ -3,7 +3,11 @@
 #-u to unbuffer output. Otherwise when calling with nohup or redirecting output things are printed very lately or would even mixup
 # from source at https://github.com/JsBergbau/MiTemperature2
 
-from bluepy import btle
+try:
+    from bluepy import btle
+except:
+    print('You do not have bluepy installed, which is needed to run BLE.')
+    print('Install using sudo pip3 install bluepy')
 import argparse
 import os
 import re
@@ -15,9 +19,12 @@ import signal
 import traceback
 import math
 import logging
-import paho.mqtt.publish as publish     # pip3 install paho-mqtt
+try:    
+    import paho.mqtt.publish as publish
+except:
+    print('You do not have mqtt installed, which is needed to talk to the broker.')
+    print('Install using sudo pip3 install paho-mqtt')
 
-# set the hostname to your MQTT server
 topic = "blemqtt/sensor01"  # MQTT Topic
 hostname = "192.168.0.99"   # address of MQTT server
 
