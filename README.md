@@ -75,7 +75,9 @@ Humidity: 46
 * to test the MQTT output we can use Home Assistant
  Just open up Developer Tools and go to the MQTT tab
  enter blemqtt/# next to **Listening to** under the **Listen to a topic** tab
- 
+ <p align="center">
+  <img width="800" src="resources/ha_mqtt.png">
+</p>
  
 
 
