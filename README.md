@@ -15,11 +15,17 @@ The display outputs Temperature, Humidity and Battery level using Bluetooth Low 
   * LYWSD03MMC.py
   to the /home/pi folder  
 * LYWSD03MMC.py is the main script that does all the work. It was taken from https://github.com/JsBergbau/MiTemperature2
-  All I have done is added a few lines to output the data to MQTT. The oly change you need to make is 
+  All I have done is added a few lines to output the data to MQTT. The only change you need to make is 
   ```
   hostname = "192.168.0.99"   # address of MQTT server
   ```
   where you must enter the name, or IP address of your MQTT server.
+  
+  You will also need to install bluepy https://github.com/IanHarvey/bluepy using
+  ```
+  $ sudo apt-get install python3-pip libglib2.0-dev
+  $ sudo pip3 install bluepy
+'''
 * ble_scan_example.py is from https://gist.github.com/bgloh/3c7dd0c754a0b596e8ef6225199adc1e. I have reproduced here, unchanged. You will need to run this to discover the address of your device
   run
 ```
