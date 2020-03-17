@@ -25,7 +25,7 @@ except:
     print('You do not have mqtt installed, which is needed to talk to the broker.')
     print('Install using sudo pip3 install paho-mqtt')
 
-topic = "blemqtt/sensor01"  # MQTT Topic
+topic = "blemqtt/"  # MQTT Topic
 hostname = "192.168.0.99"   # address of MQTT server
 
 @dataclass
@@ -234,6 +234,8 @@ args=parser.parse_args()
 if args.device:
     if re.match("[0-9a-fA-F]{2}([:]?)[0-9a-fA-F]{2}(\\1[0-9a-fA-F]{2}){4}$",args.device):
         adress=args.device
+        topic += adress.replace(':','')
+        print ('Topic',topic)
     else:
         print("Please specify device MAC-Address in format AA:BB:CC:DD:EE:FF")
         os._exit(1)
