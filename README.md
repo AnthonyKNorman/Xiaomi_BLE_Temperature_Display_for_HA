@@ -116,7 +116,7 @@ Humidity: 52
  enter blemqtt/# next to **Listening to** under the **Listen to a topic** tab and click on **START LISTENING**
  
  <p align="center">
-  <img width="800" src="resources/blemqtt listen.png">
+  <img width="400" src="resources/blemqtt listen.png">
 </p>
  
 You should see an output like the one above.
