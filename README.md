@@ -83,8 +83,9 @@ do
 done
 
 ```  
-  NOTE: the ```-c 1``` switch means that the LYWSD03MMC.py script will run once then exit
-  you will probably need to use chmod to make the script execustable```
+  NOTE: the ```-c 1``` switch means that the LYWSD03MMC.py script will run once then exit.
+  
+  You will probably need to use chmod to make the script executable```
 ``` 
 sudo chmod 777 blemqtt.sh
 ```
