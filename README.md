@@ -89,7 +89,7 @@ done
 ``` 
 sudo chmod 777 blemqtt.sh
 ```
-8 now try
+now try
 ```
 ./blemqtt.sh
 ```
