@@ -10,23 +10,18 @@ The display outputs Temperature, Humidity and Battery level using Bluetooth Low 
 ## Building The Solution
 * The first thing you need to do is to get the latest version of Raspbian running on your Pi W. You can find out how to do that here https://all4pi.com/uncategorized/headless-raspberry-pi-setup-in-twenty-minutes/
 * Now copy the files:
-  * blemqtt.sh
   * ble_scan_example.py
   * LYWSD03MMC.py
   to the /home/pi folder  
 * LYWSD03MMC.py is the main script that does all the work. It was taken from https://github.com/JsBergbau/MiTemperature2
-  All I have done is added a few lines to output the data to MQTT. The only change you need to make is 
-  ```
-  hostname = "192.168.0.99"   # address of MQTT server
-  ```
-  where you must enter the name, or IP address of your MQTT server.
+  All I have done is added a few lines to output the data to MQTT. 
   
-  You will also need to install bluepy https://github.com/IanHarvey/bluepy using
+  You will need to install bluepy https://github.com/IanHarvey/bluepy using
   ```
   $ sudo apt-get install python3-pip libglib2.0-dev
   $ sudo pip3 install bluepy
 '''
-* ble_scan_example.py is from https://gist.github.com/bgloh/3c7dd0c754a0b596e8ef6225199adc1e. I have reproduced here, unchanged. You will need to run this to discover the address of your device
+* ble_scan_example.py is from https://gist.github.com/bgloh/3c7dd0c754a0b596e8ef6225199adc1e. I have reproduced here, unchanged. You will need to run this to discover the addresses of your devices
   run
 ```
 sudo python3 ble_scan_example.py
@@ -61,62 +56,53 @@ Device a4:c1:38:cf:bc:2f (public), RSSI=-63 dB
   Flags = 06
   16b Service Data = 95fe30585b05012fbccf38c1a4280100
   Complete Local Name = LYWSD03MMC
-
-
 ```
 This shows the addresses of two LYWSD03MMC devices as a4:c1:38:47:63:36 and a4:c1:38:cf:bc:2f
-* now edit blemqtt.sh and change the addresses to match the ones you have just discovered
-```
-#!/bin/bash
-# continuously loops around devices
-for (( ; ; ))
-do
-    # for first device
-    /home/pi/LYWSD03MMC.py -d a4:c1:38:cf:bc:2f -r -b 5 -c 1
-    sleep 60s
-    
-    #second device
-    /home/pi/LYWSD03MMC.py -d a4:c1:38:47:63:36 -r -b 5 -c 1
-    sleep 60s
-    
-    #etc
-done
 
-```  
-  NOTE: the ```-c 1``` switch means that the LYWSD03MMC.py script will run once then exit.
-  
-  You will probably need to use chmod to make the script executable```
-``` 
-sudo chmod 777 blemqtt.sh
+now run
 ```
-now try
+/home/pi/LYWSD03MMC.py -d a4:c1:38:cf:bc:2f,a4:c1:38:47:63:36 -r -b 5 -c 1 -m 192.168.0.99 -del 20
 ```
-./blemqtt.sh
+where ```-d a4:c1:38:cf:bc:2f,a4:c1:38:47:63:36``` should be a comma-separated list of your device mac addresses - no spaces!
+and ```-m 192.168.0.99``` should be the ip address, or name, of your MQTT server.
+and ```-d 20``` is the number of seconds between reading each device
+
+
+if all is well you should see an output like this
 ```
-  if all is well you should see an output like this
-```
-Topic blemqtt/a4c138cfbc2f
 Trying to connect to a4:c1:38:cf:bc:2f
+Temperature: 21.7
+Humidity: 41
+Battery voltage: 2.991
+Battery level: 89
+1 measurements collected. Exiting in a moment.
+Topic blemqtt/a4c138cfbc2f
+measurements deque([Measurement(temperature=21.7, humidity=41, voltage=2.991, calibratedHumidity=0, battery=89, timestamp=1585126373)])
+21.7
+Publishing {"temperature": "21.7", "humidity": "41", "batt": "89", "voltage": "2.991"}
+
+Connection lost
+Waiting...
+Trying to connect to a4:c1:38:47:63:36
 Temperature: 20.3
-Humidity: 48
-Battery-Level: 99
-Temperature: 20.3
-Humidity: 48
+Humidity: 47
+Battery voltage: 2.788
+Battery level: 69
 1 measurements collected. Exiting in a moment.
 Topic blemqtt/a4c138476336
-Trying to connect to a4:c1:38:47:63:36
-Battery-Level: 99
-Temperature: 20.2
-Humidity: 52
-1 measurements collected. Exiting in a moment.
-
+measurements deque([Measurement(temperature=20.3, humidity=47, voltage=2.788, calibratedHumidity=0, battery=69, timestamp=1585126412)])
+20.3
+Publishing {"temperature": "20.3", "humidity": "47", "batt": "69", "voltage": "2.788"}
+Connection lost
+Waiting...
 ```
+
 * to test the MQTT output we can use Home Assistant
  Just open up Developer Tools and go to the MQTT tab
  enter blemqtt/# next to **Listening to** under the **Listen to a topic** tab and click on **START LISTENING**
  
  <p align="center">
-  <img width="400" src="resources/blemqtt listen.png">
+  <img width="400" src="resources/listen.png">
 </p>
  
 You should see an output like the one above.
