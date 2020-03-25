@@ -1,13 +1,8 @@
 #!/usr/bin/python3 -u
 #!/home/openhabian/Python3/Python-3.7.4/python -u
 #-u to unbuffer output. Otherwise when calling with nohup or redirecting output things are printed very lately or would even mixup
-# from source at https://github.com/JsBergbau/MiTemperature2
 
-try:
-    from bluepy import btle
-except:
-    print('You do not have bluepy installed, which is needed to run BLE.')
-    print('Install using sudo pip3 install bluepy')
+from bluepy import btle
 import argparse
 import os
 import re
@@ -19,32 +14,33 @@ import signal
 import traceback
 import math
 import logging
+
 try:    
     import paho.mqtt.publish as publish
 except:
     print('You do not have mqtt installed, which is needed to talk to the broker.')
     print('Install using sudo pip3 install paho-mqtt')
 
-topic = "blemqtt/"  # MQTT Topic
-hostname = "192.168.0.99"   # address of MQTT server
+base_topic = "blemqtt/"  # MQTT Topic
 
 @dataclass
 class Measurement:
     temperature: float
     humidity: int
+    voltage: float
     calibratedHumidity: int = 0
     battery: int = 0
-    timestamp: int = 0
+    timestamp: int = 0    
 
     def __eq__(self, other):
-        if self.temperature == other.temperature and self.humidity == other.humidity and self.calibratedHumidity == other.calibratedHumidity and self.battery == other.battery:
+        if self.temperature == other.temperature and self.humidity == other.humidity and self.calibratedHumidity == other.calibratedHumidity and self.battery == other.battery and self.voltage == other.voltage:
             return  True
         else:
             return False
 
 measurements=deque()
-globalBatteryLevel=0
-previousMeasurement=Measurement(0,0,0,0)
+#globalBatteryLevel=0
+previousMeasurement=Measurement(0,0,0,0,0,0)
 identicalCounter=0
 
 def signal_handler(sig, frame):
@@ -85,8 +81,8 @@ def thread_SendingData():
                 identicalCounter+=1
                 continue
             identicalCounter=0
-            fmt = "sensorname,temperature,humidity" #don't try to seperate by semicolon ';' os.system will use that as command seperator
-            params = args.name + " " + str(mea.temperature) + " " + str(mea.humidity)
+            fmt = "sensorname,temperature,humidity,voltage" #don't try to seperate by semicolon ';' os.system will use that as command seperator
+            params = args.name + " " + str(mea.temperature) + " " + str(mea.humidity) + " " + str(mea.voltage)
             if (args.TwoPointCalibration or args.offset): #would be more efficient to generate fmt only once
                 fmt +=",humidityCalibrated"
                 params += " " + str(mea.calibratedHumidity)
@@ -103,7 +99,7 @@ def thread_SendingData():
                     print ("Data couln't be send to Callback, retrying...")
                     time.sleep(5) #wait before trying again
             else: #data was sent
-                previousMeasurement=Measurement(mea.temperature,mea.humidity,mea.calibratedHumidity,mea.battery,0) #using copy or deepcopy requires implementation in the class definition
+                previousMeasurement=Measurement(mea.temperature,mea.humidity,mea.voltage,mea.calibratedHumidity,mea.battery,0) #using copy or deepcopy requires implementation in the class definition
 
         except IndexError:
             #print("Keine Daten")
@@ -111,7 +107,7 @@ def thread_SendingData():
         except Exception as e:
             print(e)
             print(traceback.format_exc())
-            
+
 mode="round"
 class MyDelegate(btle.DefaultDelegate):
     def __init__(self, params):
@@ -119,9 +115,9 @@ class MyDelegate(btle.DefaultDelegate):
         # ... initialise here
     
     def handleNotification(self, cHandle, data):
-        global measurements, topic, hostname
+        global measurements
         try:
-            measurement = Measurement(0,0,0,0,0)
+            measurement = Measurement(0,0,0,0,0,0)
             measurement.timestamp = int(time.time())
             temp=int.from_bytes(data[0:2],byteorder='little',signed=True)/100
             #print("Temp received: " + str(temp))
@@ -152,9 +148,17 @@ class MyDelegate(btle.DefaultDelegate):
             humidity=int.from_bytes(data[2:3],byteorder='little')
             print("Temperature: " + str(temp))
             print("Humidity: " + str(humidity))
-
+            voltage=int.from_bytes(data[3:5],byteorder='little') / 1000.
+            print("Battery voltage:",voltage)
             measurement.temperature = temp
             measurement.humidity = humidity
+            measurement.voltage = voltage
+            if args.battery:
+                #measurement.battery = globalBatteryLevel
+                batteryLevel = min(int(round((voltage - 2.1),2) * 100), 100) #3.1 or above --> 100% 2.1 --> 0 %
+                measurement.battery = batteryLevel
+                print("Battery level:",batteryLevel)
+                
 
             if args.offset:
                 humidityCalibrated = humidity + args.offset
@@ -178,17 +182,8 @@ class MyDelegate(btle.DefaultDelegate):
                     humidityCalibrated = 0
                 humidityCalibrated=int(round(humidityCalibrated,0))
                 print("Calibrated humidity: " + str(humidityCalibrated))
-                measurement.calibratedHumidity = humidityCalibrated
+                measurement.calibratedHumidity = humidityCalibrated    
 
-            if args.battery:
-                measurement.battery = globalBatteryLevel
-
-            # send mqtt
-            message = '{"temperature": "' + str(measurement.temperature) + '", '
-            message = message + '"humidity": "' + str(measurement.humidity) + '", '
-            message = message + '"batt": "' + str(measurement.battery) + '"}'
-            publish.single(topic, message, hostname=hostname)
-            
             measurements.append(measurement)
 
         except Exception as e:
@@ -201,15 +196,25 @@ class MyDelegate(btle.DefaultDelegate):
 def connect():
     p = btle.Peripheral(adress)    
     val=b'\x01\x00'
-    p.writeCharacteristic(0x0038,val,True)
+    p.writeCharacteristic(0x0038,val,True) #enable notifications of Temperature, Humidity and Battery voltage
+    p.writeCharacteristic(0x0046,b'\xf4\x01\x00',True)
     p.withDelegate(MyDelegate("abc"))
     return p
+
+# roll around to the next device address    
+def set_address():
+    global address_ctr, addresses, adress
+    address_ctr += 1
+    if address_ctr > len(addresses):
+        address_ctr = 0    
+    adress = addresses[address_ctr]
 
 # Main loop --------
 parser=argparse.ArgumentParser()
 parser.add_argument("--device","-d", help="Set the device MAC-Address in format AA:BB:CC:DD:EE:FF",metavar='AA:BB:CC:DD:EE:FF')
-parser.add_argument("--battery","-b", help="Read batterylevel every Nth update", metavar='N', type=int)
+parser.add_argument("--battery","-b", help="Get estimated battery level", metavar='', type=int, nargs='?', const=1)
 parser.add_argument("--count","-c", help="Read/Receive N measurements and then exit script", metavar='N', type=int)
+parser.add_argument("--delay","-del", help="Delay between taking readings from each device", metavar='N', type=int)
 
 rounding = parser.add_argument_group("Rounding and debouncing")
 rounding.add_argument("--round","-r", help="Round temperature to one decimal place",action='store_true')
@@ -230,15 +235,22 @@ callbackgroup.add_argument("--callback","-call", help="Pass the path to a progra
 callbackgroup.add_argument("--name","-n", help="Give this sensor a name reported to the callback script")
 callbackgroup.add_argument("--skipidentical","-skip", help="N consecutive identical measurements won't be reported to callbackfunction",metavar='N', type=int, default=0)
 
+mqttgroup = parser.add_argument_group("MQTT related functions")
+mqttgroup.add_argument("--mqtt","-m", help="IP address, or name, of MQTT server")
+
+
 args=parser.parse_args()
 if args.device:
-    if re.match("[0-9a-fA-F]{2}([:]?)[0-9a-fA-F]{2}(\\1[0-9a-fA-F]{2}){4}$",args.device):
-        adress=args.device
-        topic += adress.replace(':','')
-        print ('Topic',topic)
-    else:
-        print("Please specify device MAC-Address in format AA:BB:CC:DD:EE:FF")
-        os._exit(1)
+    print('args.device', args.device)
+    addresses = args.device.split(',')
+    print(addresses, len(addresses))
+    for address in addresses:
+        if not re.match("[0-9a-fA-F]{2}([:]?)[0-9a-fA-F]{2}(\\1[0-9a-fA-F]{2}){4}$",address):
+            print("Please specify device MAC-Address in format AA:BB:CC:DD:EE:FF")
+            os._exit(1)
+    address_ctr = 1000
+    set_address()
+    
 else:
     parser.print_help()
     os._exit(1)
@@ -252,6 +264,20 @@ if args.TwoPointCalibration:
         os._exit(1)
 if not args.name:
     args.name = args.device
+
+if args.mqtt:
+    hostname = args.mqtt
+else:
+    print ('You must set the MQTT hostname - e.g. -m 192.168.0.99')
+    os._exit(1)
+    
+if args.delay:
+    delay = args.delay
+    print ('Delay set to {} seconds'.format(delay))
+else:
+    delay = 30
+    print ('No delay set. Defaulting to 30 seconds')
+    
 
 p=btle.Peripheral()
 cnt=0
@@ -297,12 +323,13 @@ while True:
             connected=True
             unconnectedTime=None
             
-        if args.battery:
-                if(cnt % args.battery == 0):
-                    batt=p.readCharacteristic(0x001b)
-                    batt=int.from_bytes(batt,byteorder="little")
-                    print("Battery-Level: " + str(batt))
-                    globalBatteryLevel = batt
+        # if args.battery:
+                # if(cnt % args.battery == 0):
+                    # print("Warning the battery option is deprecated, Aqara device always reports 99 % battery")
+                    # batt=p.readCharacteristic(0x001b)
+                    # batt=int.from_bytes(batt,byteorder="little")
+                    # print("Battery-Level: " + str(batt))
+                    # globalBatteryLevel = batt
             
             
         if p.waitForNotifications(2000):
@@ -313,7 +340,42 @@ while True:
                 print(str(args.count) + " measurements collected. Exiting in a moment.")
                 p.disconnect()
                 time.sleep(5)
-                os._exit(0)
+                #It seems that sometimes bluepy-helper remains and thus prevents a reconnection, so we try killing our own bluepy-helper
+                pstree=os.popen("pstree -p " + str(pid)).read() #we want to kill only bluepy from our own process tree, because other python scripts have there own bluepy-helper process
+                bluepypid=0
+                try:
+                    bluepypid=re.findall(r'bluepy-helper\((.*)\)',pstree)[0] #Store the bluepypid, to kill it later
+                except IndexError: #Should normally occur because we're disconnected
+                    logging.debug("Couldn't find pid of bluepy-helper")
+                if bluepypid is not 0:
+                    os.system("kill " + bluepypid)
+                    logging.debug("Killed bluepy with pid: " + str(bluepypid))
+                ##############################################################    
+                # changes added                     
+                
+                # send mqtt
+                topic = base_topic + adress.replace(':','')
+                print ('Topic',topic)
+                
+                print('measurements', measurements)
+                print(measurements[0].temperature)
+                measurement = measurements[0]
+
+                message = '{"temperature": "' + str(measurement.temperature) + '", '
+                message = message + '"humidity": "' + str(measurement.humidity) + '", '
+                message = message + '"batt": "' + str(measurement.battery) + '", '
+                message = message + '"voltage": "' + str(measurement.voltage) + '"}'
+                print('Publishing ' + message)
+                publish.single(topic, message, hostname=hostname)
+                cnt = 0         # reset the counter - do not exit
+                measurements.clear()            # clear the measurements array or it will continue to grow
+                set_address()                   # roll round to the next address in the array
+                time.sleep(delay)                  # delay between reading each device
+                # os._exit(0)
+                
+                # end of changes
+                ##############################################################    
+
             print("")
             continue
     except Exception as e:
