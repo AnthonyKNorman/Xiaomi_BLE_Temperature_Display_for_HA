@@ -3,10 +3,10 @@ Description=BLE MQTT LYWSD03MMC
 After=network.target
 
 [Service]
-ExecStart=/home/pi/blemqtt.sh
+ExecStart=/home/pi/LYWSD03MMC.py -d a4:c1:38:cf:bc:2f,a4:c1:38:47:63:36 -r -b 5 -c 1 -m 192.168.0.99 -del 60
 WorkingDirectory=/home/pi
-StandardOutput=inherit
-StandardError=inherit
+StandardOutput=/home/pi/log1.log
+StandardError=/home/pi/log2.log
 Restart=always
 User=pi
 
