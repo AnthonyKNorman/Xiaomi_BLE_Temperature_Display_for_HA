@@ -1,4 +1,6 @@
+**NOTE: I AM NO LONGER MAINTAINING THIS REPOSITORY AS THE DISPLAY IS NOW SUPPORTED BY ESPHOME**
 # Xiaomi BLE Temperature Display for Home Assistant
+
 ## Introduction
 I have developed this project to integrate the Xiaomi LYWSD03MMC LCD temperature and Humidity display with Home Assistant. 
 
